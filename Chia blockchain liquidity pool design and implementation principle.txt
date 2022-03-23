@@ -1,0 +1,79 @@
+Chia blockchain liquidity pool design and implementation principle
+
+https://chivescoin.org/2022/02/22/chia-blockchain-liquidity-pool-design-and-implementation-principle/
+
+This article mainly discusses the design and implementation principle of the liquidity pool of the Chia blockchain. If there is something wrong, we can communicate with each other and make progress together.
+
+As we all know, the design of the liquidity pool is derived from UNISWAP on the ETH network. The main features are:
+
+1 X*Y=Z, X and Y represent two different tokens respectively, and Z represents their product. Z is constant, the parts that change are X and Y.
+
+2 When a user buys or sells TOKEN, the object of the transaction is the liquidity pool, not the user.
+
+3 Users can stake two kinds of TOKEN to the liquidity pool to provide liquidity, and at the same time obtain the TOKEN of the liquidity pool as a return.
+
+4 When the user cancels the stake, the two tokens are returned at the same time.
+
+The design of the UNISWAP liquidity pool mainly uses the solidity on the ETH network. With the help of the ETH account model, solidity code can get the address’s balance, after adding some logical operations, to complete the transaction between users and the liquidity pool.
+
+The Chia blockchain is similar to Bitcoin. It is based on the UTXO model and has certain programming capabilities. The development language on the chain is Chialisp. However, the Chialisp code can not get the address balance. This dilemma makes it impossible to fully realize the Swap function through Chialisp. Python or other programming languages ​​must be used to complete the balance query, calculation, transfer, and other operations.
+
+This will bring about a serious problem, that is, the realization of the liquidity pool under the Chia blockchain requires the cooperation of two languages ​​at the same time. Chialisp is an on-chain language, and Python is an off-chain language. If the entire SWAP system is open-sourced, there is no way for users to verify that the code run by the SWAP provider is the set of open-source code on Github. So the reputation of the SWAP provider is very important at this time.
+
+Even with all these inconveniences, the Chia blockchain liquidity pool is much-needed. Because the traditional order book model cannot provide sufficient liquidity for the trading pair, the trading willingness of both parties is very low, so the entire trading activity is close to stopping.
+
+Then, the next discussion is how to use Python and Chialisp to implement the design of the liquidity pool.
+
+1 Required TOKEN
+
+1 XCH: On-chain standard coin
+
+2 TOKEN A: Temporarily named ROSE, TOKEN swapped with XCH
+
+3 TOKEN B: Temporarily named SHARE, the proof of equity of the liquidity pool, after users provide liquidity, they will get a certain amount of SHARE to prove the user’s stake process. When the user cancels the stake, the TOKEN needs to be returned first, and then the corresponding XCH and ROSE will be obtained.
+
+4 TOKEN C: Temporarily named LPT, the tokens issued by the entire SWAP are regularly distributed to users who provide liquidity for SWAP.
+
+2 Life cycle of a liquidity pool
+
+1 Initial release: The project party needs to set the price. Suppose the ROSE team decides that the initial ROSE price is 0.001 XCH, then the ROSE team needs to initially deposit 10 XCH and 10000 ROSE as the initial liquidity. In order to ensure the initial liquidity for every project, the minimum XCH in the initial liquidity is 10 XCH.
+
+2 User stake: After some time, the two tokens ratio in the liquidity pool has changed, becoming 1 XCH: 1200 ROSE. At this time, if the user stakes, they need to deposit two tokens at the ratio of 1 XCH: 1200 ROSE, and the user will receive a certain amount of SHARE.
+
+3 Cancel stake: If the user wants to cancel the stake, he needs to return their SHARE to the liquidity pool, and then the liquidity pool will return the two tokens to the user according to the latest token ratio.
+
+4 Purchase TOKEN: The user spends XCH or ROSE, and then gets ROSE or XCH.
+
+3 Liquidity pool fees
+
+1 For each transaction, SWAP will charge 0.5% as a handling fee, 0.3% will be returned to the liquidity provider through the liquidity pool, and 0.2% will be owned by SWAP and used to repurchase SWAP’s TOKEN in the open market.
+
+2 For each transaction, users need to pay 0.0001 XCH as a handling fee to prevent dust attacks.
+
+4 Incentive mechanism of liquidity pool
+
+1 All users who provide liquidity to the liquidity pool can obtain LPT issued by SWAP.
+
+2 SWAP will use one part of the handling fee to convert them into cash to pay for the LPT listing fee on other exchanges, and use another part of the handling fee to repurchase LPT on the open market, and the rest will be used as the operating capital of the SWAP project.
+
+5 Design principles of liquidity pools
+
+1 Calculate the balance of XCH and ROSE in the liquidity pool
+
+2 Assuming that the user spends the amount A of ROSE to purchase, through the formula of X*Y=Z, theoretically, the amount B of XCH can be obtained.
+
+3 Transaction of spend bundle: transfer amount A of ROSE to the liquidity pool ROSE address, while the liquidity pool transfers B*0.99 XCH to the user and B*0.01 XCH to SWAP. At the same time, users need to pay a miner fee of 0.0001 XCH. These two transactions need to be entered into the same spend bundle.
+
+4 User stake, cancel stake is the same as the above principle.
+
+6 Disadvantages of Liquidity Pools
+
+1 Currently, it needs to be implemented in a combination of Python and Chialisp. Because Chialisp cannot get the balance of the address, the calculation process of X*Y=Z can only be calculated by Python, and the Python code is run off-chain, so the whole calculation process cannot be made open and transparent. Rely on the credibility of the SWAP provider.
+
+2 For the Python program to obtain a more accurate address balance, the entire processing process must be serialized, and there must be a certain time interval between each transaction process to ensure that the queried balance is accurate, which will lead to SWAP transaction frequency greatly reduced.
+
+3 For the SWAP transaction speed, if the transaction amount of the order accounts for less than 1% of the entire liquidity, it can be processed in parallel.
+
+7 Release time of Liquidity Pools
+
+The beta version is expected to be released around 2022.3.10
